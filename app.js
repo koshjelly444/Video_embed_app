@@ -77,7 +77,7 @@ class FocusVideo {
         this.renderFeed();
     }
 
-    handleSubmit(e) {
+    async handleSubmit(e) {
         e.preventDefault();
         const url = this.videoUrlInput.value.trim();
 
@@ -106,8 +106,40 @@ class FocusVideo {
             return;
         }
 
+        // Fetch caption/title from oEmbed
+        const caption = await this.fetchVideoCaption(videoData.url, videoData.platform);
+        if (caption) {
+            videoData.caption = caption;
+        }
+
         this.addToHistory(videoData);
         this.videoUrlInput.value = '';
+    }
+
+    // Fetch video title/caption using oEmbed API
+    async fetchVideoCaption(url, platform) {
+        try {
+            // Use noembed.com as a CORS-friendly oEmbed proxy
+            const response = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
+            if (!response.ok) return null;
+
+            const data = await response.json();
+
+            // Different platforms return title in different fields
+            if (data.title) {
+                return data.title;
+            }
+
+            // For Twitter, the caption might be in html or other fields
+            if (data.author_name && platform === 'Twitter/X') {
+                return `@${data.author_name}`;
+            }
+
+            return null;
+        } catch (error) {
+            console.log('Could not fetch caption:', error);
+            return null;
+        }
     }
 
     parseVideoUrl(url) {
@@ -388,23 +420,36 @@ class FocusVideo {
             embedContainer.appendChild(iframe);
 
             // Caption section below video (Instagram-style)
-            const caption = document.createElement('div');
-            caption.className = 'feed-item-caption';
+            const captionSection = document.createElement('div');
+            captionSection.className = 'feed-item-caption';
 
+            // Platform name as bold "username"
             const captionPlatform = document.createElement('span');
             captionPlatform.className = 'caption-platform';
             captionPlatform.textContent = item.platform;
 
-            const captionTime = document.createElement('span');
+            // Video title/caption text
+            if (item.caption) {
+                const captionText = document.createElement('span');
+                captionText.className = 'caption-text';
+                captionText.textContent = item.caption;
+                captionSection.appendChild(captionPlatform);
+                captionSection.appendChild(document.createTextNode(' '));
+                captionSection.appendChild(captionText);
+            } else {
+                captionSection.appendChild(captionPlatform);
+            }
+
+            // Timestamp
+            const captionTime = document.createElement('div');
             captionTime.className = 'caption-time';
             captionTime.textContent = this.formatDate(item.timestamp);
 
-            caption.appendChild(captionPlatform);
-            caption.appendChild(captionTime);
+            captionSection.appendChild(captionTime);
 
             feedItem.appendChild(header);
             feedItem.appendChild(embedContainer);
-            feedItem.appendChild(caption);
+            feedItem.appendChild(captionSection);
             this.videoFeed.appendChild(feedItem);
         });
     }
