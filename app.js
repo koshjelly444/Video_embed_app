@@ -54,8 +54,16 @@ class FocusVideo {
     }
 
     parseVideoUrl(url) {
-        // YouTube
-        const youtubeRegex = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        // Clean URL - trim whitespace and normalize
+        url = url.trim();
+
+        // Add https:// if no protocol specified
+        if (!url.match(/^https?:\/\//i)) {
+            url = 'https://' + url;
+        }
+
+        // YouTube - handles youtube.com, m.youtube.com, youtu.be, shorts, live, embed
+        const youtubeRegex = /(?:(?:m\.)?youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
         const youtubeMatch = url.match(youtubeRegex);
         if (youtubeMatch) {
             return {
@@ -66,8 +74,8 @@ class FocusVideo {
             };
         }
 
-        // Vimeo
-        const vimeoRegex = /vimeo\.com\/(?:video\/)?(\d+)/;
+        // Vimeo - handles vimeo.com and player.vimeo.com
+        const vimeoRegex = /(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/i;
         const vimeoMatch = url.match(vimeoRegex);
         if (vimeoMatch) {
             return {
@@ -78,8 +86,8 @@ class FocusVideo {
             };
         }
 
-        // TikTok
-        const tiktokRegex = /tiktok\.com\/@[\w.-]+\/video\/(\d+)/;
+        // TikTok - handles tiktok.com, m.tiktok.com, vm.tiktok.com (short links need expansion)
+        const tiktokRegex = /(?:(?:m|www)\.)?tiktok\.com\/@[\w.-]+\/video\/(\d+)/i;
         const tiktokMatch = url.match(tiktokRegex);
         if (tiktokMatch) {
             return {
@@ -90,8 +98,22 @@ class FocusVideo {
             };
         }
 
-        // Twitter/X - use iframe embed
-        const twitterRegex = /(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/;
+        // TikTok short link (vm.tiktok.com) - extract video ID from path
+        const tiktokShortRegex = /vm\.tiktok\.com\/([a-zA-Z0-9]+)/i;
+        const tiktokShortMatch = url.match(tiktokShortRegex);
+        if (tiktokShortMatch) {
+            // Short links need to be resolved - we'll show an error for now
+            return {
+                platform: 'TikTok',
+                id: tiktokShortMatch[1],
+                url: url,
+                embedUrl: `https://www.tiktok.com/embed/v2/${tiktokShortMatch[1]}`,
+                isShortLink: true
+            };
+        }
+
+        // Twitter/X - handles twitter.com, x.com, mobile.twitter.com
+        const twitterRegex = /(?:(?:mobile\.)?twitter\.com|x\.com)\/(?:#!\/)?(\w+)\/status(?:es)?\/(\d+)/i;
         const twitterMatch = url.match(twitterRegex);
         if (twitterMatch) {
             const theme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -103,8 +125,8 @@ class FocusVideo {
             };
         }
 
-        // Instagram Reels/Posts - use iframe embed
-        const instagramRegex = /instagram\.com\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/;
+        // Instagram - handles instagram.com, www.instagram.com for reels, posts, tv
+        const instagramRegex = /(?:www\.)?instagram\.com\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/i;
         const instagramMatch = url.match(instagramRegex);
         if (instagramMatch) {
             return {
@@ -115,13 +137,25 @@ class FocusVideo {
             };
         }
 
-        // Facebook Videos
-        const facebookRegex = /facebook\.com\/(?:watch\/?\?v=|[\w.-]+\/videos\/)(\d+)/;
-        const facebookMatch = url.match(facebookRegex);
+        // Facebook - handles facebook.com, fb.watch, m.facebook.com
+        const facebookVideoRegex = /(?:(?:m|www)\.)?facebook\.com\/(?:watch\/?\?v=|[\w.-]+\/videos\/|reel\/)(\d+)/i;
+        const facebookMatch = url.match(facebookVideoRegex);
         if (facebookMatch) {
             return {
                 platform: 'Facebook',
                 id: facebookMatch[1],
+                url: url,
+                embedUrl: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`
+            };
+        }
+
+        // fb.watch short links
+        const fbWatchRegex = /fb\.watch\/([a-zA-Z0-9_-]+)/i;
+        const fbWatchMatch = url.match(fbWatchRegex);
+        if (fbWatchMatch) {
+            return {
+                platform: 'Facebook',
+                id: fbWatchMatch[1],
                 url: url,
                 embedUrl: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`
             };
