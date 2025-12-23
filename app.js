@@ -372,8 +372,12 @@ class FocusVideo {
 
             // Create iframe
             const iframe = document.createElement('iframe');
-            // Remove autoplay from URL to prevent auto-playing
-            let embedUrl = item.embedUrl.replace(/[?&]autoplay=1/gi, '').replace(/\?&/, '?');
+            // Force disable autoplay for YouTube
+            let embedUrl = item.embedUrl;
+            if (item.platform === 'YouTube') {
+                embedUrl = embedUrl.replace(/[?&]autoplay=1/gi, '');
+                embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'autoplay=0';
+            }
             iframe.src = embedUrl;
             iframe.setAttribute('sandbox', sandbox);
             iframe.setAttribute('allow', 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
