@@ -345,6 +345,44 @@ header h1 {
     background: linear-gradient(45deg, var(--gradient-start), var(--gradient-mid), var(--gradient-end));
 }
 
+.feed-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.category-select {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+    transition: all var(--transition);
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a8a8a8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 28px;
+}
+
+.category-select:hover {
+    border-color: var(--border-light);
+}
+
+.category-select:focus {
+    border-color: var(--accent);
+}
+
+.category-select option {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    padding: 8px;
+}
+
 .feed-item-delete {
     background: none;
     border: none;

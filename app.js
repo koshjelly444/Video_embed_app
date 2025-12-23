@@ -496,6 +496,32 @@ class FocusVideo {
                 platform.className = 'feed-item-platform';
                 platform.textContent = item.platform;
 
+                // Header actions (category selector + delete)
+                const headerActions = document.createElement('div');
+                headerActions.className = 'feed-item-actions';
+
+                // Category selector
+                const categorySelect = document.createElement('select');
+                categorySelect.className = 'category-select';
+                categorySelect.setAttribute('aria-label', 'Change category');
+
+                // Add all category options
+                const allCategories = ['Music', 'Gaming', 'Tech', 'Comedy', 'Sports', 'Education', 'Entertainment', 'News', 'Food', 'Travel', 'Other'];
+                allCategories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    const icon = FocusVideo.CATEGORY_ICONS[cat] || '📹';
+                    option.textContent = `${icon} ${cat}`;
+                    if (cat === (item.category || 'Other')) {
+                        option.selected = true;
+                    }
+                    categorySelect.appendChild(option);
+                });
+
+                categorySelect.addEventListener('change', (e) => {
+                    this.updateItemCategory(item.id, e.target.value);
+                });
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'feed-item-delete';
                 deleteBtn.textContent = '×';
@@ -505,8 +531,11 @@ class FocusVideo {
                     this.renderFeed();
                 });
 
+                headerActions.appendChild(categorySelect);
+                headerActions.appendChild(deleteBtn);
+
                 header.appendChild(platform);
-                header.appendChild(deleteBtn);
+                header.appendChild(headerActions);
 
                 // Video embed container
                 const embedContainer = document.createElement('div');
@@ -577,6 +606,15 @@ class FocusVideo {
         this.renderFeed();
         // Scroll to top of feed
         this.feedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    updateItemCategory(id, newCategory) {
+        const item = this.history.find(item => item.id === id);
+        if (item) {
+            item.category = newCategory;
+            this.saveHistory();
+            this.renderFeed();
+        }
     }
 
     getPlatformIcon(platform) {
