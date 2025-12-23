@@ -127,8 +127,8 @@ class FocusVideo {
                 platform: 'YouTube',
                 id: youtubeMatch[1],
                 url: url,
-                // Hide captions, related videos, and branding
-                embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0`
+                // Hide captions, related videos, and branding - no autoplay
+                embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}?rel=0&modestbranding=1&cc_load_policy=0`
             };
         }
 
@@ -140,8 +140,8 @@ class FocusVideo {
                 platform: 'Vimeo',
                 id: vimeoMatch[1],
                 url: url,
-                // Hide title, byline, and portrait
-                embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&title=0&byline=0&portrait=0`
+                // Hide title, byline, and portrait - no autoplay
+                embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?title=0&byline=0&portrait=0`
             };
         }
 
