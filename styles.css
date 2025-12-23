@@ -316,6 +316,27 @@ header h1 {
     border: none;
 }
 
+/* Caption below video - Instagram style */
+.feed-item-caption {
+    padding: 12px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.caption-platform {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.caption-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+}
+
 /* Toast - Instagram style notification */
 .toast {
     position: fixed;

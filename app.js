@@ -234,8 +234,8 @@ class FocusVideo {
         this.videoPlatform.textContent = this.escapeHtml(videoData.platform);
         this.videoContainer.classList.remove('hidden');
 
-        // Sandbox prevents navigation away from app - only allow what's needed for playback
-        const sandbox = 'allow-scripts allow-same-origin allow-presentation';
+        // Sandbox prevents navigation away from app - allow what's needed for playback
+        const sandbox = 'allow-scripts allow-same-origin allow-presentation allow-popups allow-forms';
 
         // Check if vertical video platform
         const isVertical = videoData.platform === 'TikTok' || videoData.platform === 'Instagram';
@@ -331,8 +331,8 @@ class FocusVideo {
             return;
         }
 
-        // Sandbox settings for security
-        const sandbox = 'allow-scripts allow-same-origin allow-presentation';
+        // Sandbox settings - YouTube needs allow-popups and allow-forms to work properly
+        const sandbox = 'allow-scripts allow-same-origin allow-presentation allow-popups allow-forms';
 
         this.history.forEach(item => {
             if (!this.isValidVideoData(item)) return;
@@ -341,7 +341,7 @@ class FocusVideo {
             feedItem.className = 'feed-item';
             feedItem.dataset.id = item.id;
 
-            // Header with platform and delete button
+            // Header with platform avatar and delete button
             const header = document.createElement('div');
             header.className = 'feed-item-header';
 
@@ -386,8 +386,25 @@ class FocusVideo {
             iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
 
             embedContainer.appendChild(iframe);
+
+            // Caption section below video (Instagram-style)
+            const caption = document.createElement('div');
+            caption.className = 'feed-item-caption';
+
+            const captionPlatform = document.createElement('span');
+            captionPlatform.className = 'caption-platform';
+            captionPlatform.textContent = item.platform;
+
+            const captionTime = document.createElement('span');
+            captionTime.className = 'caption-time';
+            captionTime.textContent = this.formatDate(item.timestamp);
+
+            caption.appendChild(captionPlatform);
+            caption.appendChild(captionTime);
+
             feedItem.appendChild(header);
             feedItem.appendChild(embedContainer);
+            feedItem.appendChild(caption);
             this.videoFeed.appendChild(feedItem);
         });
     }
