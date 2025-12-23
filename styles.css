@@ -430,6 +430,24 @@ header h1 {
     max-height: none;
 }
 
+.feed-item-embed.image {
+    padding-bottom: 0;
+    height: auto;
+    position: relative;
+}
+
+.feed-item-embed.image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    cursor: pointer;
+    transition: opacity var(--transition);
+}
+
+.feed-item-embed.image img:hover {
+    opacity: 0.95;
+}
+
 .feed-item-embed iframe {
     position: absolute;
     top: 0;

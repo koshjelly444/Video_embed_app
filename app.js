@@ -11,6 +11,9 @@ class FocusVideo {
         'www.facebook.com'
     ];
 
+    // Allowed image extensions
+    static IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+
     // Category keywords for auto-detection
     static CATEGORY_KEYWORDS = {
         'Music': ['music', 'song', 'album', 'concert', 'remix', 'cover', 'lyrics', 'official video', 'mv', 'beat', 'hip hop', 'rap', 'rock', 'pop', 'jazz', 'edm', 'dj', 'playlist', 'acoustic', 'live performance', 'singer', 'band', 'audio'],
@@ -36,6 +39,7 @@ class FocusVideo {
         'News': '📰',
         'Food': '🍕',
         'Travel': '✈️',
+        'Image': '🖼️',
         'Other': '📹'
     };
 
@@ -90,6 +94,10 @@ class FocusVideo {
         if (typeof data.id !== 'string' || data.id.length > 100) return false;
         if (typeof data.platform !== 'string' || data.platform.length > 20) return false;
         if (typeof data.url !== 'string' || data.url.length > 500) return false;
+        // Allow images or valid embed URLs
+        if (data.type === 'image') {
+            return typeof data.embedUrl === 'string' && data.embedUrl.length > 0;
+        }
         if (typeof data.embedUrl !== 'string' || !this.isValidEmbedUrl(data.embedUrl)) return false;
         return true;
     }
@@ -309,6 +317,21 @@ class FocusVideo {
             };
         }
 
+        // Direct image URLs
+        const urlLower = url.toLowerCase();
+        const isImage = FocusVideo.IMAGE_EXTENSIONS.some(ext => urlLower.includes(ext));
+        if (isImage) {
+            // Generate unique ID from URL
+            const imageId = btoa(url).slice(0, 20);
+            return {
+                platform: 'Image',
+                id: imageId,
+                url: url,
+                embedUrl: url,
+                type: 'image'
+            };
+        }
+
         return null;
     }
 
@@ -506,7 +529,7 @@ class FocusVideo {
                 categorySelect.setAttribute('aria-label', 'Change category');
 
                 // Add all category options
-                const allCategories = ['Music', 'Gaming', 'Tech', 'Comedy', 'Sports', 'Education', 'Entertainment', 'News', 'Food', 'Travel', 'Other'];
+                const allCategories = ['Music', 'Gaming', 'Tech', 'Comedy', 'Sports', 'Education', 'Entertainment', 'News', 'Food', 'Travel', 'Image', 'Other'];
                 allCategories.forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat;
@@ -547,31 +570,44 @@ class FocusVideo {
                 header.appendChild(platform);
                 header.appendChild(headerActions);
 
-                // Video embed container
+                // Embed container (video or image)
                 const embedContainer = document.createElement('div');
                 embedContainer.className = 'feed-item-embed';
 
-                const isVertical = item.platform === 'TikTok' || item.platform === 'Instagram';
-                if (isVertical) {
-                    embedContainer.classList.add('vertical');
-                }
+                if (item.type === 'image') {
+                    // Display image
+                    embedContainer.classList.add('image');
+                    const img = document.createElement('img');
+                    img.src = item.embedUrl;
+                    img.alt = item.caption || 'Image';
+                    img.loading = 'lazy';
+                    img.addEventListener('click', () => {
+                        window.open(item.url, '_blank');
+                    });
+                    embedContainer.appendChild(img);
+                } else {
+                    // Display video iframe
+                    const isVertical = item.platform === 'TikTok' || item.platform === 'Instagram';
+                    if (isVertical) {
+                        embedContainer.classList.add('vertical');
+                    }
 
-                // Create iframe
-                const iframe = document.createElement('iframe');
-                // Force disable autoplay for YouTube
-                let embedUrl = item.embedUrl;
-                if (item.platform === 'YouTube') {
-                    embedUrl = embedUrl.replace(/[?&]autoplay=1/gi, '');
-                    embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'autoplay=0';
-                }
-                iframe.src = embedUrl;
-                iframe.setAttribute('sandbox', sandbox);
-                iframe.setAttribute('allow', 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
-                iframe.setAttribute('allowfullscreen', '');
-                iframe.setAttribute('loading', 'lazy');
-                iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+                    const iframe = document.createElement('iframe');
+                    // Force disable autoplay for YouTube
+                    let embedUrl = item.embedUrl;
+                    if (item.platform === 'YouTube') {
+                        embedUrl = embedUrl.replace(/[?&]autoplay=1/gi, '');
+                        embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'autoplay=0';
+                    }
+                    iframe.src = embedUrl;
+                    iframe.setAttribute('sandbox', sandbox);
+                    iframe.setAttribute('allow', 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                    iframe.setAttribute('allowfullscreen', '');
+                    iframe.setAttribute('loading', 'lazy');
+                    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
 
-                embedContainer.appendChild(iframe);
+                    embedContainer.appendChild(iframe);
+                }
 
                 // Caption section below video (Instagram-style)
                 const captionSection = document.createElement('div');
