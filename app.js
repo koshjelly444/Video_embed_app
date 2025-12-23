@@ -20,7 +20,6 @@ class FocusVideo {
         this.closeVideoBtn = document.getElementById('close-video');
         this.historyList = document.getElementById('history-list');
         this.historySection = document.getElementById('history-section');
-        this.clearHistoryBtn = document.getElementById('clear-history');
         this.themeToggle = document.getElementById('theme-toggle');
         this.errorToast = document.getElementById('error-toast');
 
@@ -67,7 +66,6 @@ class FocusVideo {
         // Event listeners
         this.videoForm.addEventListener('submit', (e) => this.handleSubmit(e));
         this.closeVideoBtn.addEventListener('click', () => this.closeVideo());
-        this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
 
         // Load saved theme
