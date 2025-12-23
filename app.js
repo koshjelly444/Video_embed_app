@@ -281,7 +281,7 @@ class FocusVideo {
     }
 
     addToHistory(videoData) {
-        // Remove if already exists
+        // Remove if already exists (prevents duplicates)
         this.history = this.history.filter(item => item.id !== videoData.id);
 
         // Add to beginning
@@ -290,8 +290,8 @@ class FocusVideo {
             timestamp: Date.now()
         });
 
-        // Keep only last 20 items
-        this.history = this.history.slice(0, 20);
+        // Keep up to 1000 items (localStorage limit protection)
+        this.history = this.history.slice(0, 1000);
 
         this.saveHistory();
         this.renderHistory();
