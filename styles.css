@@ -226,6 +226,10 @@ header h1 {
     box-shadow: 0 4px 20px var(--shadow);
 }
 
+.history-section.hidden {
+    display: none;
+}
+
 .history-header {
     display: flex;
     justify-content: space-between;
@@ -325,6 +329,126 @@ header h1 {
 
 .history-item .delete-btn:hover {
     color: var(--error);
+}
+
+/* Feed Section */
+.feed-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 20px var(--shadow);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.feed-section.hidden {
+    display: none;
+}
+
+.feed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg-secondary);
+    z-index: 10;
+}
+
+.feed-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.feed-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.feed-btn {
+    background: var(--accent);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.feed-btn:hover {
+    background: var(--accent-hover);
+}
+
+.video-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.feed-item {
+    background: var(--bg-primary);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.feed-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.feed-item-platform {
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 0.875rem;
+}
+
+.feed-item-delete {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.25rem;
+    padding: 0.25rem;
+    transition: color var(--transition);
+}
+
+.feed-item-delete:hover {
+    color: var(--error);
+}
+
+.feed-item-embed {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    background: #000;
+}
+
+.feed-item-embed.vertical {
+    padding-bottom: 0;
+    height: auto;
+    max-width: 350px;
+    margin: 0 auto;
+    aspect-ratio: 9/16;
+    max-height: 500px;
+}
+
+.feed-item-embed iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 
 /* Toast */

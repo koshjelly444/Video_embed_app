@@ -19,11 +19,19 @@ class FocusVideo {
         this.videoPlatform = document.getElementById('video-platform');
         this.closeVideoBtn = document.getElementById('close-video');
         this.historyList = document.getElementById('history-list');
+        this.historySection = document.getElementById('history-section');
         this.clearHistoryBtn = document.getElementById('clear-history');
         this.themeToggle = document.getElementById('theme-toggle');
         this.errorToast = document.getElementById('error-toast');
 
+        // Feed elements
+        this.feedSection = document.getElementById('feed-section');
+        this.videoFeed = document.getElementById('video-feed');
+        this.expandFeedBtn = document.getElementById('expand-feed');
+        this.collapseFeedBtn = document.getElementById('collapse-feed');
+
         this.history = this.loadHistory();
+        this.feedOpen = false;
 
         this.init();
     }
@@ -65,11 +73,20 @@ class FocusVideo {
         this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
 
+        // Feed toggle listeners
+        this.expandFeedBtn.addEventListener('click', () => this.openFeed());
+        this.collapseFeedBtn.addEventListener('click', () => this.closeFeed());
+
         // Load saved theme
         this.loadTheme();
 
         // Render history
         this.renderHistory();
+
+        // Auto-open feed if there are videos
+        if (this.history.length > 0) {
+            this.openFeed();
+        }
     }
 
     handleSubmit(e) {
@@ -295,18 +312,33 @@ class FocusVideo {
 
         this.saveHistory();
         this.renderHistory();
+
+        // Also update feed if open
+        if (this.feedOpen) {
+            this.renderFeed();
+        }
     }
 
     removeFromHistory(id) {
         this.history = this.history.filter(item => item.id !== id);
         this.saveHistory();
         this.renderHistory();
+
+        // Close feed if no more videos
+        if (this.history.length === 0 && this.feedOpen) {
+            this.closeFeed();
+        }
     }
 
     clearHistory() {
         this.history = [];
         this.saveHistory();
         this.renderHistory();
+
+        // Close feed when cleared
+        if (this.feedOpen) {
+            this.closeFeed();
+        }
     }
 
     renderHistory() {
@@ -364,6 +396,90 @@ class FocusVideo {
             });
 
             this.historyList.appendChild(historyItem);
+        });
+    }
+
+    // Feed management
+    openFeed() {
+        if (this.history.length === 0) {
+            this.showError('No videos in your feed yet. Add some videos first!');
+            return;
+        }
+
+        this.feedOpen = true;
+        this.feedSection.classList.remove('hidden');
+        this.historySection.classList.add('hidden');
+        this.videoContainer.classList.add('hidden');
+        this.renderFeed();
+    }
+
+    closeFeed() {
+        this.feedOpen = false;
+        this.feedSection.classList.add('hidden');
+        this.historySection.classList.remove('hidden');
+        this.videoFeed.innerHTML = ''; // Clear iframes to stop playback
+    }
+
+    renderFeed() {
+        this.videoFeed.innerHTML = '';
+
+        if (this.history.length === 0) {
+            this.videoFeed.innerHTML = '<p class="empty-history">No videos in your feed</p>';
+            return;
+        }
+
+        // Sandbox settings for security
+        const sandbox = 'allow-scripts allow-same-origin allow-presentation';
+
+        this.history.forEach(item => {
+            if (!this.isValidVideoData(item)) return;
+
+            const feedItem = document.createElement('div');
+            feedItem.className = 'feed-item';
+            feedItem.dataset.id = item.id;
+
+            // Header with platform and delete button
+            const header = document.createElement('div');
+            header.className = 'feed-item-header';
+
+            const platform = document.createElement('span');
+            platform.className = 'feed-item-platform';
+            platform.textContent = item.platform;
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'feed-item-delete';
+            deleteBtn.textContent = '×';
+            deleteBtn.setAttribute('aria-label', 'Remove from feed');
+            deleteBtn.addEventListener('click', () => {
+                this.removeFromHistory(item.id);
+                this.renderFeed();
+            });
+
+            header.appendChild(platform);
+            header.appendChild(deleteBtn);
+
+            // Video embed container
+            const embedContainer = document.createElement('div');
+            embedContainer.className = 'feed-item-embed';
+
+            const isVertical = item.platform === 'TikTok' || item.platform === 'Instagram';
+            if (isVertical) {
+                embedContainer.classList.add('vertical');
+            }
+
+            // Create iframe
+            const iframe = document.createElement('iframe');
+            iframe.src = item.embedUrl;
+            iframe.setAttribute('sandbox', sandbox);
+            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+            iframe.setAttribute('allowfullscreen', '');
+            iframe.setAttribute('loading', 'lazy');
+            iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+
+            embedContainer.appendChild(iframe);
+            feedItem.appendChild(header);
+            feedItem.appendChild(embedContainer);
+            this.videoFeed.appendChild(feedItem);
         });
     }
 

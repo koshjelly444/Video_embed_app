@@ -62,10 +62,22 @@
                 <div id="video-embed" class="video-embed"></div>
             </section>
 
-            <section class="history-section">
+            <!-- Video Feed Section -->
+            <section id="feed-section" class="feed-section hidden">
+                <div class="feed-header">
+                    <h2>Your Feed</h2>
+                    <div class="feed-controls">
+                        <button id="collapse-feed" class="feed-btn">Collapse</button>
+                        <button id="clear-history" class="clear-btn">Clear All</button>
+                    </div>
+                </div>
+                <div id="video-feed" class="video-feed"></div>
+            </section>
+
+            <section id="history-section" class="history-section">
                 <div class="history-header">
                     <h2>Recent Videos</h2>
-                    <button id="clear-history" class="clear-btn">Clear All</button>
+                    <button id="expand-feed" class="feed-btn">Open Feed</button>
                 </div>
                 <div id="history-list" class="history-list">
                     <p class="empty-history">No videos watched yet</p>
