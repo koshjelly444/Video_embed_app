@@ -30,32 +30,6 @@ class FocusVideo {
 
         // Render history
         this.renderHistory();
-
-        // Load Twitter/X widget script
-        this.loadTwitterScript();
-
-        // Load Instagram embed script
-        this.loadInstagramScript();
-    }
-
-    loadTwitterScript() {
-        if (!document.getElementById('twitter-widget-script')) {
-            const script = document.createElement('script');
-            script.id = 'twitter-widget-script';
-            script.src = 'https://platform.twitter.com/widgets.js';
-            script.async = true;
-            document.body.appendChild(script);
-        }
-    }
-
-    loadInstagramScript() {
-        if (!document.getElementById('instagram-embed-script')) {
-            const script = document.createElement('script');
-            script.id = 'instagram-embed-script';
-            script.src = 'https://www.instagram.com/embed.js';
-            script.async = true;
-            document.body.appendChild(script);
-        }
     }
 
     handleSubmit(e) {
@@ -116,19 +90,20 @@ class FocusVideo {
             };
         }
 
-        // Twitter/X
-        const twitterRegex = /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/;
+        // Twitter/X - use iframe embed
+        const twitterRegex = /(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/;
         const twitterMatch = url.match(twitterRegex);
         if (twitterMatch) {
+            const theme = document.documentElement.getAttribute('data-theme') || 'light';
             return {
                 platform: 'Twitter/X',
-                id: twitterMatch[1],
+                id: twitterMatch[2],
                 url: url,
-                type: 'twitter'
+                embedUrl: `https://platform.twitter.com/embed/Tweet.html?id=${twitterMatch[2]}&theme=${theme}`
             };
         }
 
-        // Instagram Reels/Posts
+        // Instagram Reels/Posts - use iframe embed
         const instagramRegex = /instagram\.com\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/;
         const instagramMatch = url.match(instagramRegex);
         if (instagramMatch) {
@@ -136,7 +111,7 @@ class FocusVideo {
                 platform: 'Instagram',
                 id: instagramMatch[1],
                 url: url,
-                type: 'instagram'
+                embedUrl: `https://www.instagram.com/p/${instagramMatch[1]}/embed/`
             };
         }
 
@@ -159,51 +134,31 @@ class FocusVideo {
         this.videoPlatform.textContent = videoData.platform;
         this.videoContainer.classList.remove('hidden');
 
-        if (videoData.type === 'twitter') {
-            // Twitter embed
-            this.videoEmbed.innerHTML = `
-                <blockquote class="twitter-tweet" data-theme="${document.documentElement.getAttribute('data-theme') || 'light'}">
-                    <a href="${videoData.url}"></a>
-                </blockquote>
-            `;
-            // Re-render Twitter widgets
-            if (window.twttr && window.twttr.widgets) {
-                window.twttr.widgets.load(this.videoEmbed);
-            }
-            // Adjust container for Twitter
-            this.videoEmbed.style.paddingBottom = '0';
-            this.videoEmbed.style.height = 'auto';
-            this.videoEmbed.style.minHeight = '400px';
-        } else if (videoData.type === 'instagram') {
-            // Instagram embed
-            this.videoEmbed.innerHTML = `
-                <blockquote class="instagram-media"
-                    data-instgrm-permalink="${videoData.url}"
-                    data-instgrm-version="14"
-                    style="max-width:540px; margin: 0 auto;">
-                </blockquote>
-            `;
-            // Re-render Instagram widgets
-            if (window.instgrm && window.instgrm.Embeds) {
-                window.instgrm.Embeds.process();
-            }
-            // Adjust container for Instagram
-            this.videoEmbed.style.paddingBottom = '0';
-            this.videoEmbed.style.height = 'auto';
-            this.videoEmbed.style.minHeight = '500px';
+        // Sandbox prevents navigation away from app - only allow what's needed for playback
+        const sandbox = 'allow-scripts allow-same-origin allow-presentation';
+
+        // Check if vertical video platform
+        const isVertical = videoData.platform === 'TikTok' || videoData.platform === 'Instagram';
+
+        // All platforms use iframe embed - keeps video in-app
+        this.videoEmbed.innerHTML = `
+            <iframe
+                src="${videoData.embedUrl}"
+                sandbox="${sandbox}"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+        `;
+
+        // Apply appropriate styling based on video orientation
+        if (isVertical) {
+            this.videoEmbed.classList.add('vertical');
+            this.videoEmbed.style.paddingBottom = '';
         } else {
-            // Standard iframe embed
-            this.videoEmbed.innerHTML = `
-                <iframe
-                    src="${videoData.embedUrl}"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen>
-                </iframe>
-            `;
-            // Reset container styles
-            this.videoEmbed.style.paddingBottom = '56.25%';
-            this.videoEmbed.style.height = '0';
-            this.videoEmbed.style.minHeight = '';
+            this.videoEmbed.classList.remove('vertical');
+            this.videoEmbed.style.paddingBottom = videoData.platform === 'Twitter/X' ? '75%' : '56.25%';
         }
 
         // Scroll to video
