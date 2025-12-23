@@ -54,6 +54,10 @@ class FocusVideo {
         // Feed elements
         this.feedSection = document.getElementById('feed-section');
         this.videoFeed = document.getElementById('video-feed');
+        this.categoryFilter = document.getElementById('category-filter');
+
+        // Current filter
+        this.selectedCategory = 'all';
 
         this.history = this.loadHistory();
 
@@ -411,6 +415,7 @@ class FocusVideo {
         this.videoFeed.innerHTML = '';
 
         if (this.history.length === 0) {
+            this.categoryFilter.innerHTML = '<button class="filter-btn active" data-category="all">All</button>';
             this.videoFeed.innerHTML = '<p class="empty-history">No videos in your feed</p>';
             return;
         }
@@ -433,11 +438,38 @@ class FocusVideo {
             return a.localeCompare(b);
         });
 
+        // Build category filter buttons
+        this.categoryFilter.innerHTML = '';
+
+        // All button
+        const allBtn = document.createElement('button');
+        allBtn.className = `filter-btn ${this.selectedCategory === 'all' ? 'active' : ''}`;
+        allBtn.dataset.category = 'all';
+        allBtn.textContent = 'All';
+        allBtn.addEventListener('click', () => this.filterByCategory('all'));
+        this.categoryFilter.appendChild(allBtn);
+
+        // Category buttons
+        sortedCategories.forEach(category => {
+            const btn = document.createElement('button');
+            btn.className = `filter-btn ${this.selectedCategory === category ? 'active' : ''}`;
+            btn.dataset.category = category;
+            const icon = FocusVideo.CATEGORY_ICONS[category] || '📹';
+            btn.textContent = `${icon} ${category}`;
+            btn.addEventListener('click', () => this.filterByCategory(category));
+            this.categoryFilter.appendChild(btn);
+        });
+
+        // Filter categories based on selection
+        const categoriesToRender = this.selectedCategory === 'all'
+            ? sortedCategories
+            : sortedCategories.filter(c => c === this.selectedCategory);
+
         // Sandbox settings - YouTube needs allow-popups and allow-forms to work properly
         const sandbox = 'allow-scripts allow-same-origin allow-presentation allow-popups allow-forms';
 
         // Render each category section
-        sortedCategories.forEach(category => {
+        categoriesToRender.forEach(category => {
             const categorySection = document.createElement('div');
             categorySection.className = 'category-section';
 
@@ -538,6 +570,13 @@ class FocusVideo {
 
             this.videoFeed.appendChild(categorySection);
         });
+    }
+
+    filterByCategory(category) {
+        this.selectedCategory = category;
+        this.renderFeed();
+        // Scroll to top of feed
+        this.feedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     getPlatformIcon(platform) {
