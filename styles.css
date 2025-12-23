@@ -247,6 +247,30 @@ header h1 {
     font-size: 14px;
 }
 
+/* Category Section */
+.category-section {
+    margin-bottom: 8px;
+}
+
+.category-header {
+    position: sticky;
+    top: 52px;
+    background: var(--bg-elevated);
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.category-icon {
+    font-size: 16px;
+}
+
 /* Feed Item - Instagram post style */
 .feed-item {
     background: var(--bg-primary);

@@ -11,6 +11,34 @@ class FocusVideo {
         'www.facebook.com'
     ];
 
+    // Category keywords for auto-detection
+    static CATEGORY_KEYWORDS = {
+        'Music': ['music', 'song', 'album', 'concert', 'remix', 'cover', 'lyrics', 'official video', 'mv', 'beat', 'hip hop', 'rap', 'rock', 'pop', 'jazz', 'edm', 'dj', 'playlist', 'acoustic', 'live performance', 'singer', 'band', 'audio'],
+        'Gaming': ['game', 'gaming', 'gameplay', 'playthrough', 'walkthrough', 'speedrun', 'esports', 'twitch', 'stream', 'fortnite', 'minecraft', 'valorant', 'league', 'cod', 'gta', 'ps5', 'xbox', 'nintendo', 'pc gaming', 'let\'s play'],
+        'Tech': ['tech', 'technology', 'review', 'unboxing', 'iphone', 'android', 'laptop', 'computer', 'software', 'app', 'coding', 'programming', 'tutorial', 'how to', 'gadget', 'ai', 'robot', 'startup', 'apple', 'google', 'microsoft'],
+        'Comedy': ['funny', 'comedy', 'laugh', 'joke', 'prank', 'meme', 'hilarious', 'sketch', 'standup', 'parody', 'roast', 'blooper', 'fail', 'wtf', 'lol', 'humor'],
+        'Sports': ['sports', 'football', 'basketball', 'soccer', 'nba', 'nfl', 'mlb', 'hockey', 'tennis', 'golf', 'boxing', 'mma', 'ufc', 'wrestling', 'olympics', 'workout', 'fitness', 'gym', 'training', 'highlights', 'goal'],
+        'Education': ['learn', 'education', 'tutorial', 'course', 'lecture', 'explain', 'how to', 'tips', 'guide', 'lesson', 'study', 'science', 'history', 'math', 'english', 'documentary', 'ted', 'facts'],
+        'Entertainment': ['movie', 'film', 'trailer', 'series', 'show', 'episode', 'netflix', 'disney', 'marvel', 'dc', 'anime', 'drama', 'reaction', 'celebrity', 'interview', 'podcast', 'vlog', 'daily'],
+        'News': ['news', 'breaking', 'update', 'politics', 'election', 'president', 'report', 'journalist', 'media', 'cnn', 'fox', 'bbc', 'live', 'announcement'],
+        'Food': ['food', 'recipe', 'cooking', 'chef', 'restaurant', 'eat', 'taste', 'mukbang', 'kitchen', 'baking', 'meal', 'dinner', 'lunch', 'breakfast', 'delicious', 'yummy'],
+        'Travel': ['travel', 'trip', 'vacation', 'tour', 'vlog', 'adventure', 'explore', 'destination', 'hotel', 'flight', 'beach', 'mountain', 'city', 'country', 'abroad']
+    };
+
+    static CATEGORY_ICONS = {
+        'Music': '🎵',
+        'Gaming': '🎮',
+        'Tech': '💻',
+        'Comedy': '😂',
+        'Sports': '⚽',
+        'Education': '📚',
+        'Entertainment': '🎬',
+        'News': '📰',
+        'Food': '🍕',
+        'Travel': '✈️',
+        'Other': '📹'
+    };
+
     constructor() {
         this.videoForm = document.getElementById('video-form');
         this.videoUrlInput = document.getElementById('video-url');
@@ -108,6 +136,10 @@ class FocusVideo {
         const caption = await this.fetchVideoCaption(videoData.url, videoData.platform);
         if (caption) {
             videoData.caption = caption;
+            // Auto-detect category from title
+            videoData.category = this.detectCategory(caption);
+        } else {
+            videoData.category = 'Other';
         }
 
         this.addToHistory(videoData);
@@ -138,6 +170,28 @@ class FocusVideo {
             console.log('Could not fetch caption:', error);
             return null;
         }
+    }
+
+    // Auto-detect category from video title/caption
+    detectCategory(title) {
+        if (!title) return 'Other';
+
+        const lowerTitle = title.toLowerCase();
+        let bestMatch = { category: 'Other', score: 0 };
+
+        for (const [category, keywords] of Object.entries(FocusVideo.CATEGORY_KEYWORDS)) {
+            let score = 0;
+            for (const keyword of keywords) {
+                if (lowerTitle.includes(keyword)) {
+                    score++;
+                }
+            }
+            if (score > bestMatch.score) {
+                bestMatch = { category, score };
+            }
+        }
+
+        return bestMatch.category;
     }
 
     parseVideoUrl(url) {
@@ -361,94 +415,128 @@ class FocusVideo {
             return;
         }
 
+        // Group videos by category
+        const categories = {};
+        this.history.forEach(item => {
+            if (!this.isValidVideoData(item)) return;
+            const category = item.category || 'Other';
+            if (!categories[category]) {
+                categories[category] = [];
+            }
+            categories[category].push(item);
+        });
+
+        // Sort categories (put Other last)
+        const sortedCategories = Object.keys(categories).sort((a, b) => {
+            if (a === 'Other') return 1;
+            if (b === 'Other') return -1;
+            return a.localeCompare(b);
+        });
+
         // Sandbox settings - YouTube needs allow-popups and allow-forms to work properly
         const sandbox = 'allow-scripts allow-same-origin allow-presentation allow-popups allow-forms';
 
-        this.history.forEach(item => {
-            if (!this.isValidVideoData(item)) return;
+        // Render each category section
+        sortedCategories.forEach(category => {
+            const categorySection = document.createElement('div');
+            categorySection.className = 'category-section';
 
-            const feedItem = document.createElement('div');
-            feedItem.className = 'feed-item';
-            feedItem.dataset.id = item.id;
+            // Category header
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'category-header';
 
-            // Header with platform avatar and delete button
-            const header = document.createElement('div');
-            header.className = 'feed-item-header';
+            const categoryIcon = FocusVideo.CATEGORY_ICONS[category] || '📹';
+            categoryHeader.innerHTML = `<span class="category-icon">${categoryIcon}</span> ${this.escapeHtml(category)}`;
 
-            const platform = document.createElement('span');
-            platform.className = 'feed-item-platform';
-            platform.textContent = item.platform;
+            categorySection.appendChild(categoryHeader);
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'feed-item-delete';
-            deleteBtn.textContent = '×';
-            deleteBtn.setAttribute('aria-label', 'Remove from feed');
-            deleteBtn.addEventListener('click', () => {
-                this.removeFromHistory(item.id);
-                this.renderFeed();
+            // Videos in this category
+            categories[category].forEach(item => {
+                const feedItem = document.createElement('div');
+                feedItem.className = 'feed-item';
+                feedItem.dataset.id = item.id;
+
+                // Header with platform avatar and delete button
+                const header = document.createElement('div');
+                header.className = 'feed-item-header';
+
+                const platform = document.createElement('span');
+                platform.className = 'feed-item-platform';
+                platform.textContent = item.platform;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'feed-item-delete';
+                deleteBtn.textContent = '×';
+                deleteBtn.setAttribute('aria-label', 'Remove from feed');
+                deleteBtn.addEventListener('click', () => {
+                    this.removeFromHistory(item.id);
+                    this.renderFeed();
+                });
+
+                header.appendChild(platform);
+                header.appendChild(deleteBtn);
+
+                // Video embed container
+                const embedContainer = document.createElement('div');
+                embedContainer.className = 'feed-item-embed';
+
+                const isVertical = item.platform === 'TikTok' || item.platform === 'Instagram';
+                if (isVertical) {
+                    embedContainer.classList.add('vertical');
+                }
+
+                // Create iframe
+                const iframe = document.createElement('iframe');
+                // Force disable autoplay for YouTube
+                let embedUrl = item.embedUrl;
+                if (item.platform === 'YouTube') {
+                    embedUrl = embedUrl.replace(/[?&]autoplay=1/gi, '');
+                    embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'autoplay=0';
+                }
+                iframe.src = embedUrl;
+                iframe.setAttribute('sandbox', sandbox);
+                iframe.setAttribute('allow', 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.setAttribute('loading', 'lazy');
+                iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+
+                embedContainer.appendChild(iframe);
+
+                // Caption section below video (Instagram-style)
+                const captionSection = document.createElement('div');
+                captionSection.className = 'feed-item-caption';
+
+                // Platform name as bold "username"
+                const captionPlatform = document.createElement('span');
+                captionPlatform.className = 'caption-platform';
+                captionPlatform.textContent = item.platform;
+
+                // Video title/caption text
+                if (item.caption) {
+                    const captionText = document.createElement('span');
+                    captionText.className = 'caption-text';
+                    captionText.textContent = item.caption;
+                    captionSection.appendChild(captionPlatform);
+                    captionSection.appendChild(document.createTextNode(' '));
+                    captionSection.appendChild(captionText);
+                } else {
+                    captionSection.appendChild(captionPlatform);
+                }
+
+                // Timestamp
+                const captionTime = document.createElement('div');
+                captionTime.className = 'caption-time';
+                captionTime.textContent = this.formatDate(item.timestamp);
+
+                captionSection.appendChild(captionTime);
+
+                feedItem.appendChild(header);
+                feedItem.appendChild(embedContainer);
+                feedItem.appendChild(captionSection);
+                categorySection.appendChild(feedItem);
             });
 
-            header.appendChild(platform);
-            header.appendChild(deleteBtn);
-
-            // Video embed container
-            const embedContainer = document.createElement('div');
-            embedContainer.className = 'feed-item-embed';
-
-            const isVertical = item.platform === 'TikTok' || item.platform === 'Instagram';
-            if (isVertical) {
-                embedContainer.classList.add('vertical');
-            }
-
-            // Create iframe
-            const iframe = document.createElement('iframe');
-            // Force disable autoplay for YouTube
-            let embedUrl = item.embedUrl;
-            if (item.platform === 'YouTube') {
-                embedUrl = embedUrl.replace(/[?&]autoplay=1/gi, '');
-                embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'autoplay=0';
-            }
-            iframe.src = embedUrl;
-            iframe.setAttribute('sandbox', sandbox);
-            iframe.setAttribute('allow', 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
-            iframe.setAttribute('allowfullscreen', '');
-            iframe.setAttribute('loading', 'lazy');
-            iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-
-            embedContainer.appendChild(iframe);
-
-            // Caption section below video (Instagram-style)
-            const captionSection = document.createElement('div');
-            captionSection.className = 'feed-item-caption';
-
-            // Platform name as bold "username"
-            const captionPlatform = document.createElement('span');
-            captionPlatform.className = 'caption-platform';
-            captionPlatform.textContent = item.platform;
-
-            // Video title/caption text
-            if (item.caption) {
-                const captionText = document.createElement('span');
-                captionText.className = 'caption-text';
-                captionText.textContent = item.caption;
-                captionSection.appendChild(captionPlatform);
-                captionSection.appendChild(document.createTextNode(' '));
-                captionSection.appendChild(captionText);
-            } else {
-                captionSection.appendChild(captionPlatform);
-            }
-
-            // Timestamp
-            const captionTime = document.createElement('div');
-            captionTime.className = 'caption-time';
-            captionTime.textContent = this.formatDate(item.timestamp);
-
-            captionSection.appendChild(captionTime);
-
-            feedItem.appendChild(header);
-            feedItem.appendChild(embedContainer);
-            feedItem.appendChild(captionSection);
-            this.videoFeed.appendChild(feedItem);
+            this.videoFeed.appendChild(categorySection);
         });
     }
 
