@@ -1,6 +1,16 @@
 // Focus Video - Distraction-Free Video Viewing App
 
 class FocusVideo {
+    // Allowed embed domains for security
+    static ALLOWED_EMBED_DOMAINS = [
+        'www.youtube.com',
+        'player.vimeo.com',
+        'www.tiktok.com',
+        'platform.twitter.com',
+        'www.instagram.com',
+        'www.facebook.com'
+    ];
+
     constructor() {
         this.videoForm = document.getElementById('video-form');
         this.videoUrlInput = document.getElementById('video-url');
@@ -16,6 +26,36 @@ class FocusVideo {
         this.history = this.loadHistory();
 
         this.init();
+    }
+
+    // Security: Escape HTML to prevent XSS
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Security: Validate that embed URL is from allowed domain
+    isValidEmbedUrl(url) {
+        try {
+            const parsed = new URL(url);
+            if (parsed.protocol !== 'https:') {
+                return false;
+            }
+            return FocusVideo.ALLOWED_EMBED_DOMAINS.includes(parsed.hostname);
+        } catch {
+            return false;
+        }
+    }
+
+    // Security: Validate video data structure
+    isValidVideoData(data) {
+        if (!data || typeof data !== 'object') return false;
+        if (typeof data.id !== 'string' || data.id.length > 100) return false;
+        if (typeof data.platform !== 'string' || data.platform.length > 20) return false;
+        if (typeof data.url !== 'string' || data.url.length > 500) return false;
+        if (typeof data.embedUrl !== 'string' || !this.isValidEmbedUrl(data.embedUrl)) return false;
+        return true;
     }
 
     init() {
@@ -45,6 +85,12 @@ class FocusVideo {
 
         if (!videoData) {
             this.showError('Unsupported video URL. Please use YouTube, Vimeo, TikTok, Twitter/X, Instagram, or Facebook.');
+            return;
+        }
+
+        // Security: Validate the parsed video data
+        if (!this.isValidVideoData(videoData)) {
+            this.showError('Invalid video URL format.');
             return;
         }
 
@@ -165,7 +211,13 @@ class FocusVideo {
     }
 
     embedVideo(videoData) {
-        this.videoPlatform.textContent = videoData.platform;
+        // Security: Final validation before embedding
+        if (!this.isValidEmbedUrl(videoData.embedUrl)) {
+            this.showError('Invalid embed URL.');
+            return;
+        }
+
+        this.videoPlatform.textContent = this.escapeHtml(videoData.platform);
         this.videoContainer.classList.remove('hidden');
 
         // Sandbox prevents navigation away from app - only allow what's needed for playback
@@ -174,17 +226,18 @@ class FocusVideo {
         // Check if vertical video platform
         const isVertical = videoData.platform === 'TikTok' || videoData.platform === 'Instagram';
 
-        // All platforms use iframe embed - keeps video in-app
-        this.videoEmbed.innerHTML = `
-            <iframe
-                src="${videoData.embedUrl}"
-                sandbox="${sandbox}"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-        `;
+        // Security: Create iframe element properly instead of innerHTML
+        const iframe = document.createElement('iframe');
+        iframe.src = videoData.embedUrl;
+        iframe.setAttribute('sandbox', sandbox);
+        iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+        iframe.setAttribute('allowfullscreen', '');
+        iframe.setAttribute('loading', 'lazy');
+        iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+
+        // Clear and append
+        this.videoEmbed.innerHTML = '';
+        this.videoEmbed.appendChild(iframe);
 
         // Apply appropriate styling based on video orientation
         if (isVertical) {
@@ -206,8 +259,21 @@ class FocusVideo {
 
     // History management
     loadHistory() {
-        const saved = localStorage.getItem('focusVideoHistory');
-        return saved ? JSON.parse(saved) : [];
+        try {
+            const saved = localStorage.getItem('focusVideoHistory');
+            if (!saved) return [];
+
+            const parsed = JSON.parse(saved);
+
+            // Security: Validate that it's an array and filter valid items
+            if (!Array.isArray(parsed)) return [];
+
+            return parsed.filter(item => this.isValidVideoData(item));
+        } catch {
+            // If localStorage is corrupted, start fresh
+            localStorage.removeItem('focusVideoHistory');
+            return [];
+        }
     }
 
     saveHistory() {
@@ -249,30 +315,55 @@ class FocusVideo {
             return;
         }
 
-        this.historyList.innerHTML = this.history.map(item => `
-            <div class="history-item" data-id="${item.id}">
-                <div class="platform-icon">${this.getPlatformIcon(item.platform)}</div>
-                <div class="video-info">
-                    <div class="video-url" title="${item.url}">${this.truncateUrl(item.url)}</div>
-                    <div class="video-date">${this.formatDate(item.timestamp)}</div>
-                </div>
-                <button class="delete-btn" aria-label="Delete from history">×</button>
-            </div>
-        `).join('');
+        // Security: Build DOM elements instead of using innerHTML with user data
+        this.historyList.innerHTML = '';
 
-        // Add click handlers
-        this.historyList.querySelectorAll('.history-item').forEach(item => {
-            item.addEventListener('click', (e) => {
+        this.history.forEach(item => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.dataset.id = item.id;
+
+            const platformIcon = document.createElement('div');
+            platformIcon.className = 'platform-icon';
+            platformIcon.textContent = this.getPlatformIcon(item.platform);
+
+            const videoInfo = document.createElement('div');
+            videoInfo.className = 'video-info';
+
+            const videoUrl = document.createElement('div');
+            videoUrl.className = 'video-url';
+            videoUrl.title = item.url;
+            videoUrl.textContent = this.truncateUrl(item.url);
+
+            const videoDate = document.createElement('div');
+            videoDate.className = 'video-date';
+            videoDate.textContent = this.formatDate(item.timestamp);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.setAttribute('aria-label', 'Delete from history');
+            deleteBtn.textContent = '×';
+
+            videoInfo.appendChild(videoUrl);
+            videoInfo.appendChild(videoDate);
+            historyItem.appendChild(platformIcon);
+            historyItem.appendChild(videoInfo);
+            historyItem.appendChild(deleteBtn);
+
+            // Add click handlers
+            historyItem.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-btn')) {
                     e.stopPropagation();
-                    this.removeFromHistory(item.dataset.id);
+                    this.removeFromHistory(item.id);
                 } else {
-                    const historyItem = this.history.find(h => h.id === item.dataset.id);
-                    if (historyItem) {
-                        this.embedVideo(historyItem);
+                    // Re-validate before embedding from history
+                    if (this.isValidVideoData(item)) {
+                        this.embedVideo(item);
                     }
                 }
             });
+
+            this.historyList.appendChild(historyItem);
         });
     }
 
