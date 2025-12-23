@@ -27,11 +27,8 @@ class FocusVideo {
         // Feed elements
         this.feedSection = document.getElementById('feed-section');
         this.videoFeed = document.getElementById('video-feed');
-        this.expandFeedBtn = document.getElementById('expand-feed');
-        this.collapseFeedBtn = document.getElementById('collapse-feed');
 
         this.history = this.loadHistory();
-        this.feedOpen = false;
 
         this.init();
     }
@@ -73,20 +70,11 @@ class FocusVideo {
         this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
 
-        // Feed toggle listeners
-        this.expandFeedBtn.addEventListener('click', () => this.openFeed());
-        this.collapseFeedBtn.addEventListener('click', () => this.closeFeed());
-
         // Load saved theme
         this.loadTheme();
 
-        // Render history
-        this.renderHistory();
-
-        // Auto-open feed if there are videos
-        if (this.history.length > 0) {
-            this.openFeed();
-        }
+        // Render feed on load
+        this.renderFeed();
     }
 
     handleSubmit(e) {
@@ -314,113 +302,19 @@ class FocusVideo {
         this.history = this.history.slice(0, 1000);
 
         this.saveHistory();
-        this.renderHistory();
-
-        // Also update feed if open
-        if (this.feedOpen) {
-            this.renderFeed();
-        }
+        this.renderFeed();
     }
 
     removeFromHistory(id) {
         this.history = this.history.filter(item => item.id !== id);
         this.saveHistory();
-        this.renderHistory();
-
-        // Close feed if no more videos
-        if (this.history.length === 0 && this.feedOpen) {
-            this.closeFeed();
-        }
+        this.renderFeed();
     }
 
     clearHistory() {
         this.history = [];
         this.saveHistory();
-        this.renderHistory();
-
-        // Close feed when cleared
-        if (this.feedOpen) {
-            this.closeFeed();
-        }
-    }
-
-    renderHistory() {
-        if (this.history.length === 0) {
-            this.historyList.innerHTML = '<p class="empty-history">No videos watched yet</p>';
-            return;
-        }
-
-        // Security: Build DOM elements instead of using innerHTML with user data
-        this.historyList.innerHTML = '';
-
-        this.history.forEach(item => {
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            historyItem.dataset.id = item.id;
-
-            const platformIcon = document.createElement('div');
-            platformIcon.className = 'platform-icon';
-            platformIcon.textContent = this.getPlatformIcon(item.platform);
-
-            const videoInfo = document.createElement('div');
-            videoInfo.className = 'video-info';
-
-            const videoUrl = document.createElement('div');
-            videoUrl.className = 'video-url';
-            videoUrl.title = item.url;
-            videoUrl.textContent = this.truncateUrl(item.url);
-
-            const videoDate = document.createElement('div');
-            videoDate.className = 'video-date';
-            videoDate.textContent = this.formatDate(item.timestamp);
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-btn';
-            deleteBtn.setAttribute('aria-label', 'Delete from history');
-            deleteBtn.textContent = '×';
-
-            videoInfo.appendChild(videoUrl);
-            videoInfo.appendChild(videoDate);
-            historyItem.appendChild(platformIcon);
-            historyItem.appendChild(videoInfo);
-            historyItem.appendChild(deleteBtn);
-
-            // Add click handlers
-            historyItem.addEventListener('click', (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    e.stopPropagation();
-                    this.removeFromHistory(item.id);
-                } else {
-                    // Re-validate before embedding from history
-                    if (this.isValidVideoData(item)) {
-                        this.embedVideo(item);
-                    }
-                }
-            });
-
-            this.historyList.appendChild(historyItem);
-        });
-    }
-
-    // Feed management
-    openFeed() {
-        if (this.history.length === 0) {
-            this.showError('No videos in your feed yet. Add some videos first!');
-            return;
-        }
-
-        this.feedOpen = true;
-        this.feedSection.classList.remove('hidden');
-        this.historySection.classList.add('hidden');
-        this.videoContainer.classList.add('hidden');
         this.renderFeed();
-    }
-
-    closeFeed() {
-        this.feedOpen = false;
-        this.feedSection.classList.add('hidden');
-        this.historySection.classList.remove('hidden');
-        this.videoFeed.innerHTML = ''; // Clear iframes to stop playback
     }
 
     renderFeed() {
