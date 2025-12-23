@@ -133,7 +133,8 @@ class FocusVideo {
                 platform: 'YouTube',
                 id: youtubeMatch[1],
                 url: url,
-                embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&rel=0`
+                // Hide captions, related videos, and branding
+                embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0`
             };
         }
 
@@ -145,7 +146,8 @@ class FocusVideo {
                 platform: 'Vimeo',
                 id: vimeoMatch[1],
                 url: url,
-                embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`
+                // Hide title, byline, and portrait
+                embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&title=0&byline=0&portrait=0`
             };
         }
 
@@ -165,7 +167,6 @@ class FocusVideo {
         const tiktokShortRegex = /vm\.tiktok\.com\/([a-zA-Z0-9]+)/i;
         const tiktokShortMatch = url.match(tiktokShortRegex);
         if (tiktokShortMatch) {
-            // Short links need to be resolved - we'll show an error for now
             return {
                 platform: 'TikTok',
                 id: tiktokShortMatch[1],
@@ -184,7 +185,8 @@ class FocusVideo {
                 platform: 'Twitter/X',
                 id: twitterMatch[2],
                 url: url,
-                embedUrl: `https://platform.twitter.com/embed/Tweet.html?id=${twitterMatch[2]}&theme=${theme}`
+                // Hide tweet text, show only media
+                embedUrl: `https://platform.twitter.com/embed/Tweet.html?id=${twitterMatch[2]}&theme=${theme}&hide_thread=true&hide_tweet=true`
             };
         }
 
@@ -196,7 +198,8 @@ class FocusVideo {
                 platform: 'Instagram',
                 id: instagramMatch[1],
                 url: url,
-                embedUrl: `https://www.instagram.com/p/${instagramMatch[1]}/embed/`
+                // Hide captions
+                embedUrl: `https://www.instagram.com/p/${instagramMatch[1]}/embed/?captioned=false`
             };
         }
 
