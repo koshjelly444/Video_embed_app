@@ -496,7 +496,7 @@ class FocusVideo {
                 platform.className = 'feed-item-platform';
                 platform.textContent = item.platform;
 
-                // Header actions (category selector + delete)
+                // Header actions (category selector + share + delete)
                 const headerActions = document.createElement('div');
                 headerActions.className = 'feed-item-actions';
 
@@ -522,6 +522,15 @@ class FocusVideo {
                     this.updateItemCategory(item.id, e.target.value);
                 });
 
+                // Share/Copy button
+                const shareBtn = document.createElement('button');
+                shareBtn.className = 'feed-item-share';
+                shareBtn.innerHTML = '🔗';
+                shareBtn.setAttribute('aria-label', 'Copy link');
+                shareBtn.addEventListener('click', () => {
+                    this.copyToClipboard(item.url);
+                });
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'feed-item-delete';
                 deleteBtn.textContent = '×';
@@ -532,6 +541,7 @@ class FocusVideo {
                 });
 
                 headerActions.appendChild(categorySelect);
+                headerActions.appendChild(shareBtn);
                 headerActions.appendChild(deleteBtn);
 
                 header.appendChild(platform);
@@ -615,6 +625,25 @@ class FocusVideo {
             this.saveHistory();
             this.renderFeed();
         }
+    }
+
+    copyToClipboard(url) {
+        navigator.clipboard.writeText(url).then(() => {
+            this.showToast('Link copied!');
+        }).catch(() => {
+            this.showError('Failed to copy link');
+        });
+    }
+
+    showToast(message) {
+        this.errorToast.textContent = message;
+        this.errorToast.classList.remove('hidden');
+        this.errorToast.classList.add('success');
+
+        setTimeout(() => {
+            this.errorToast.classList.add('hidden');
+            this.errorToast.classList.remove('success');
+        }, 2000);
     }
 
     getPlatformIcon(platform) {

@@ -383,6 +383,23 @@ header h1 {
     padding: 8px;
 }
 
+.feed-item-share {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    transition: transform var(--transition);
+}
+
+.feed-item-share:hover {
+    transform: scale(1.1);
+}
+
+.feed-item-share:active {
+    transform: scale(0.95);
+}
+
 .feed-item-delete {
     background: none;
     border: none;
@@ -470,6 +487,11 @@ header h1 {
 
 .toast.hidden {
     display: none;
+}
+
+.toast.success {
+    background: var(--success);
+    color: #000;
 }
 
 @keyframes fadeIn {
