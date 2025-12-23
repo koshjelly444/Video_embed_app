@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Video - Distraction-Free Video Viewing</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Focus Video</h1>
+            <p class="tagline">Watch videos without the noise</p>
+            <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <form id="video-form">
+                    <input
+                        type="url"
+                        id="video-url"
+                        placeholder="Paste a video URL (YouTube, TikTok, Vimeo, Twitter/X, Instagram)"
+                        required
+                        autocomplete="off"
+                    >
+                    <button type="submit">Watch</button>
+                </form>
+                <div class="supported-platforms">
+                    <span>Supports:</span>
+                    <span class="platform">YouTube</span>
+                    <span class="platform">Vimeo</span>
+                    <span class="platform">TikTok</span>
+                    <span class="platform">Twitter/X</span>
+                    <span class="platform">Instagram</span>
+                    <span class="platform">Facebook</span>
+                </div>
+            </section>
+
+            <section id="video-container" class="video-container hidden">
+                <div class="video-header">
+                    <span id="video-platform" class="video-platform"></span>
+                    <button id="close-video" class="close-btn" aria-label="Close video">×</button>
+                </div>
+                <div id="video-embed" class="video-embed"></div>
+            </section>
+
+            <section class="history-section">
+                <div class="history-header">
+                    <h2>Recent Videos</h2>
+                    <button id="clear-history" class="clear-btn">Clear All</button>
+                </div>
+                <div id="history-list" class="history-list">
+                    <p class="empty-history">No videos watched yet</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Focus on what matters. Watch without distractions.</p>
+        </footer>
+    </div>
+
+    <div id="error-toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
