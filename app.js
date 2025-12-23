@@ -99,7 +99,13 @@ class FocusVideo {
             return;
         }
 
-        this.embedVideo(videoData);
+        // Check for duplicate
+        if (this.history.some(item => item.id === videoData.id)) {
+            this.showError('This video is already in your feed.');
+            this.videoUrlInput.value = '';
+            return;
+        }
+
         this.addToHistory(videoData);
         this.videoUrlInput.value = '';
     }
