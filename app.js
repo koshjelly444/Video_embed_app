@@ -86,6 +86,12 @@ class MyMind {
         this.autoplayObserver = null;
         this.currentlyPlaying = null;
 
+        // Incremental rendering
+        this.BATCH_SIZE = 30;
+        this.renderedCount = 0;
+        this.isLoadingMore = false;
+        this.scrollObserver = null;
+
         this.init();
     }
 
@@ -333,9 +339,14 @@ class MyMind {
         }
     }
 
-    // --- Rendering ---
+    // --- Rendering (incremental) ---
     renderGrid() {
+        // Reset observed elements tracking when re-rendering
+        this.masonryGrid.querySelectorAll('[data-observed]').forEach(el => {
+            if (this.autoplayObserver) this.autoplayObserver.unobserve(el);
+        });
         this.masonryGrid.innerHTML = '';
+        this.renderedCount = 0;
 
         if (this.filteredItems.length === 0) {
             const empty = document.createElement('p');
@@ -347,15 +358,58 @@ class MyMind {
             return;
         }
 
+        this.renderBatch();
+        this.setupScrollLoader();
+    }
+
+    renderBatch() {
+        const end = Math.min(this.renderedCount + this.BATCH_SIZE, this.filteredItems.length);
         const fragment = document.createDocumentFragment();
 
-        this.filteredItems.forEach(item => {
-            const card = this.createCard(item);
+        for (let i = this.renderedCount; i < end; i++) {
+            const card = this.createCard(this.filteredItems[i]);
             if (card) fragment.appendChild(card);
-        });
+        }
 
-        this.masonryGrid.appendChild(fragment);
+        // Insert before the sentinel if it exists, otherwise append
+        const sentinel = this.masonryGrid.querySelector('.scroll-sentinel');
+        if (sentinel) {
+            this.masonryGrid.insertBefore(fragment, sentinel);
+        } else {
+            this.masonryGrid.appendChild(fragment);
+        }
+
+        this.renderedCount = end;
         this.setupAutoplay();
+    }
+
+    setupScrollLoader() {
+        // Remove old listener if any
+        if (this._scrollHandler) {
+            window.removeEventListener('scroll', this._scrollHandler);
+        }
+
+        if (this.renderedCount >= this.filteredItems.length) return;
+
+        this._scrollHandler = () => {
+            if (this.isLoadingMore) return;
+            if (this.renderedCount >= this.filteredItems.length) {
+                window.removeEventListener('scroll', this._scrollHandler);
+                return;
+            }
+
+            // Load more when within 800px of the bottom
+            const scrollBottom = window.innerHeight + window.scrollY;
+            const docHeight = document.documentElement.scrollHeight;
+
+            if (docHeight - scrollBottom < 800) {
+                this.isLoadingMore = true;
+                this.renderBatch();
+                this.isLoadingMore = false;
+            }
+        };
+
+        window.addEventListener('scroll', this._scrollHandler, { passive: true });
     }
 
     createCard(item) {
@@ -610,42 +664,65 @@ class MyMind {
 
     // --- Autoplay & Lazy Loading ---
     setupAutoplay() {
-        // Disconnect previous observer
-        if (this.autoplayObserver) {
-            this.autoplayObserver.disconnect();
+        // Only create observer once, just observe new elements
+        if (!this.autoplayObserver) {
+            this.autoplayObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const el = entry.target;
+
+                    if (entry.isIntersecting) {
+                        // Lazy load iframes
+                        if (el.classList.contains('lazy-placeholder') && el.dataset.embedUrl) {
+                            this.loadIframe(el);
+                        }
+
+                        // Autoplay HTML5 videos
+                        const video = el.querySelector('video');
+                        if (video) {
+                            video.play().catch(() => {});
+                        }
+                    } else {
+                        // Pause HTML5 videos when out of view
+                        const video = el.querySelector('video');
+                        if (video) {
+                            video.pause();
+                        }
+
+                        // Unload iframes that scroll far away to save memory
+                        const iframe = el.querySelector('iframe');
+                        if (iframe && !entry.isIntersecting) {
+                            const rect = el.getBoundingClientRect();
+                            const far = Math.abs(rect.top) > window.innerHeight * 3;
+                            if (far) {
+                                iframe.remove();
+                                el.classList.add('lazy-placeholder');
+                            }
+                        }
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '400px 0px'
+            });
         }
 
-        this.autoplayObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const el = entry.target;
-
-                if (entry.isIntersecting) {
-                    // Lazy load iframes
-                    if (el.classList.contains('lazy-placeholder') && el.dataset.embedUrl) {
-                        this.loadIframe(el);
-                    }
-
-                    // Autoplay videos
-                    const video = el.querySelector('video');
-                    if (video) {
-                        video.play().catch(() => {});
-                    }
-                } else {
-                    // Pause videos when out of view
-                    const video = el.querySelector('video');
-                    if (video) {
-                        video.pause();
-                    }
-                }
-            });
-        }, {
-            threshold: 0.3,
-            rootMargin: '200px 0px'
+        // Observe any new embeds and videos not yet observed
+        this.masonryGrid.querySelectorAll('.card-embed, .card-video').forEach(el => {
+            if (!el.dataset.observed) {
+                el.dataset.observed = '1';
+                this.autoplayObserver.observe(el);
+            }
         });
 
-        // Observe all embeds and videos
-        this.masonryGrid.querySelectorAll('.card-embed, .card-video').forEach(el => {
-            this.autoplayObserver.observe(el);
+        // Fallback: manually load any embeds already in/near viewport
+        // IntersectionObserver can miss initially-visible elements in some cases
+        requestAnimationFrame(() => {
+            this.masonryGrid.querySelectorAll('.card-embed.lazy-placeholder').forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < window.innerHeight + 400 && rect.bottom > -400) {
+                    if (el.dataset.embedUrl) this.loadIframe(el);
+                }
+            });
         });
     }
 
@@ -654,10 +731,17 @@ class MyMind {
 
         const iframe = document.createElement('iframe');
         let embedUrl = container.dataset.embedUrl;
+        const platform = container.dataset.platform;
 
-        // YouTube: add mute for autoplay
-        if (container.dataset.platform === 'YouTube') {
+        // Platform-specific tweaks for better playback
+        if (platform === 'YouTube') {
             embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'mute=1&autoplay=1';
+        } else if (platform === 'TikTok') {
+            // TikTok embeds work better with referrer
+            iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+        } else if (platform === 'Instagram') {
+            // Instagram embeds need same-origin for interaction
+            iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
         }
 
         iframe.src = embedUrl;
@@ -665,7 +749,9 @@ class MyMind {
         iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
         iframe.setAttribute('allowfullscreen', '');
         iframe.setAttribute('loading', 'lazy');
-        iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+        if (!iframe.getAttribute('referrerpolicy')) {
+            iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+        }
 
         container.appendChild(iframe);
     }
