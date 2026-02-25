@@ -690,3 +690,10 @@ body {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Scroll sentinel for infinite scroll */
+.scroll-sentinel {
+    width: 100%;
+    height: 1px;
+    column-span: all;
+}
