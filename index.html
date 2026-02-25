@@ -3,83 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Video - Distraction-Free Video Viewing</title>
-    <!-- Security: Content Security Policy -->
+    <title>mymind - Your Digital Mind</title>
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
         script-src 'self';
         style-src 'self' 'unsafe-inline';
         img-src 'self' https: data:;
+        media-src 'self';
         frame-src https://www.youtube.com https://player.vimeo.com https://www.tiktok.com https://platform.twitter.com https://www.instagram.com https://www.facebook.com;
         connect-src 'self' https://noembed.com;
-        font-src 'self';
+        font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
         object-src 'none';
         base-uri 'self';
         form-action 'self';
     ">
-    <!-- Security: Prevent clickjacking -->
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Focus Video</h1>
-            <p class="tagline">Watch videos without the noise</p>
-            <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+    <div class="app">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <h1 class="logo">my<span>mind</span></h1>
+            </div>
+            <div class="top-bar-center">
+                <div class="search-wrapper">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Search your mind..." autocomplete="off">
+                    <button id="search-clear" class="search-clear hidden" aria-label="Clear search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6 6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <button id="add-toggle" class="icon-btn" aria-label="Add new item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"></path>
+                    </svg>
+                </button>
+                <span id="item-count" class="item-count"></span>
+            </div>
         </header>
 
-        <main>
-            <section class="input-section">
-                <form id="video-form">
-                    <input
-                        type="url"
-                        id="video-url"
-                        placeholder="Paste a video or image URL"
-                        required
-                        autocomplete="off"
-                    >
-                    <button type="submit">Add</button>
-                </form>
-                <div class="supported-platforms">
-                    <span>Supports:</span>
-                    <span class="platform">YouTube</span>
-                    <span class="platform">Vimeo</span>
-                    <span class="platform">TikTok</span>
-                    <span class="platform">Twitter/X</span>
-                    <span class="platform">Instagram</span>
-                    <span class="platform">Facebook</span>
-                </div>
-            </section>
+        <!-- Add Item Panel (hidden by default) -->
+        <div id="add-panel" class="add-panel hidden">
+            <form id="add-form">
+                <input type="url" id="add-url" placeholder="Paste a URL (YouTube, TikTok, Instagram, X...)" autocomplete="off">
+                <button type="submit">Save</button>
+            </form>
+        </div>
 
-            <section id="video-container" class="video-container hidden">
-                <div class="video-header">
-                    <span id="video-platform" class="video-platform"></span>
-                    <button id="close-video" class="close-btn" aria-label="Close video">×</button>
-                </div>
-                <div id="video-embed" class="video-embed"></div>
-            </section>
+        <!-- Tag Filter Bar -->
+        <div id="tag-filter" class="tag-filter">
+            <button class="tag-pill active" data-tag="all">All</button>
+        </div>
 
-            <!-- Video Feed Section -->
-            <section id="feed-section" class="feed-section">
-                <div id="category-filter" class="category-filter">
-                    <button class="filter-btn active" data-category="all">All</button>
-                </div>
-                <div id="video-feed" class="video-feed">
-                    <p class="empty-history">No videos yet. Paste a URL above to start your feed.</p>
-                </div>
-            </section>
+        <!-- Masonry Grid -->
+        <main id="masonry-grid" class="masonry-grid">
+            <p class="empty-state">Your mind is empty. Add something to get started.</p>
         </main>
-
-        <footer>
-            <p>Focus on what matters. Watch without distractions.</p>
-        </footer>
     </div>
 
-    <div id="error-toast" class="toast hidden"></div>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
 
+    <script src="data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
